@@ -51,6 +51,16 @@ This project aims to provide:
 
 ---
 
+### If PowerShell says the script is not digitally signed
+
+Run:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+Get-ChildItem -Path . -Filter *.ps1 -Recurse | Unblock-File
+```
+
+
 ## Features
 
 ### Automatic elevation
