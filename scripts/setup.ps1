@@ -34,10 +34,10 @@ function Restart-AsAdmin {
         Start-Process powershell.exe `
             -Verb RunAs `
             -ArgumentList @(
-                '-NoProfile',
-                '-ExecutionPolicy', 'Bypass',
-                '-File', "`"$scriptPath`""
-            )
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-File', "`"$scriptPath`""
+        )
 
         exit
     }
@@ -68,16 +68,16 @@ function Read-YesNo {
         $answer = (Read-Host "$Prompt (Yes/No)").Trim().ToLowerInvariant()
 
         switch ($answer) {
-            'y'     { return $true }
-            'yes'   { return $true }
-            'n'     { return $false }
-            'no'    { return $false }
+            'y' { return $true }
+            'yes' { return $true }
+            'n' { return $false }
+            'no' { return $false }
             default { Write-Host "Please enter 'Yes' or 'No'." }
         }
     }
 }
 
-function Ensure-RegistryKey {
+function Test-RegistryKey {
     param([Parameter(Mandatory)][string]$Path)
 
     if (-not (Test-Path $Path)) {
@@ -92,7 +92,7 @@ function Set-DwordValue {
         [Parameter(Mandatory)][int]$Value
     )
 
-    Ensure-RegistryKey -Path $Path
+    Test-RegistryKey -Path $Path
     New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType DWord -Force | Out-Null
     Write-Ok "$Path -> $Name = $Value"
 }
@@ -104,12 +104,12 @@ function Set-StringValue {
         [Parameter(Mandatory)][string]$Value
     )
 
-    Ensure-RegistryKey -Path $Path
+    Test-RegistryKey -Path $Path
     New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType String -Force | Out-Null
     Write-Ok "$Path -> $Name = $Value"
 }
 
-function Create-BiosRecommendationsFileIfWanted {
+function Set-BiosRecommendationsFileIfWanted {
     Write-Host ""
     $createBiosFile = Read-YesNo -Prompt "Do you want to create a BIOS recommendations file on the desktop"
 
@@ -312,7 +312,7 @@ function Set-ClipboardHistoryIfWanted {
     Write-Host ""
 }
 
-function Configure-DoNotDisturbIfWanted {
+function Test-DoNotDisturbIfWanted {
     Write-Host ""
     $configureDnd = Read-YesNo -Prompt "Do you want to configure Do Not Disturb now"
 
@@ -348,7 +348,7 @@ function Set-VariableRefreshRateOff {
     $path = 'HKCU:\Software\Microsoft\DirectX\UserGpuPreferences'
     $name = 'DirectXUserGlobalSettings'
 
-    Ensure-RegistryKey -Path $path
+    Test-RegistryKey -Path $path
 
     $existing = ''
     try {
@@ -396,7 +396,7 @@ function Set-MouseAccelerationOff {
     Write-Info "Disabling mouse acceleration..."
 
     $path = 'HKCU:\Control Panel\Mouse'
-    Ensure-RegistryKey -Path $path
+    Test-RegistryKey -Path $path
 
     Set-StringValue -Path $path -Name 'MouseSpeed'      -Value '0'
     Set-StringValue -Path $path -Name 'MouseThreshold1' -Value '0'
@@ -495,7 +495,7 @@ try {
     Wait-A-Bit
     Wait-A-Bit
 
-    Create-BiosRecommendationsFileIfWanted
+    Set-BiosRecommendationsFileIfWanted
 
     Wait-A-Bit
 
@@ -534,7 +534,7 @@ try {
     Set-ClipboardHistoryIfWanted
 
     Wait-A-Bit
-    Configure-DoNotDisturbIfWanted
+    Test-DoNotDisturbIfWanted
 
     Write-Host ""
     Write-Host "========================================"
