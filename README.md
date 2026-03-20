@@ -124,7 +124,8 @@ Instead, it is started optionally through its official quick-launch command:
 ```powershell
 & ([scriptblock]::Create((irm "https://debloat.raphi.re/")))
 ```
-Ninite is not bundled with this repository.  
+Ninite is not bundled with this repository. 
+[Ninite](https://ninite.com/)
 If selected by the user, the script simply opens the official website in the browser:
 
 ## BIOS Change Disclaimer
