@@ -52,7 +52,7 @@ The script is intentionally interactive for selected settings so the user can de
 This project aims to provide:
 
 - A quick post-build configuration workflow
-- A lightweight PowerShell-based solution without a GUI
+- A lightweight portable PowerShell-based solution without a GUI
 - A simple foundation that can be expanded over time
 - A tool to get the maximum performance out of your expensive hardware
 
