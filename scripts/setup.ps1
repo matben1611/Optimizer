@@ -117,102 +117,204 @@ function Set-BiosRecommendationsFileIfWanted {
         $desktopPath = [Environment]::GetFolderPath('Desktop')
         $filePath = Join-Path $desktopPath 'bios-recommendations.txt'
 
+        # Gather system information
+        $cpu = "Unknown"
+        $gpu = "Unknown"
+        $installedRam = "Unknown"
+        $mainboardName = "Unknown"
+
+        try {
+            $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop |
+                Select-Object -First 1 -ExpandProperty Name
+        }
+        catch {
+            Write-Verbose "Unable to retrieve CPU information"
+        }
+
+        try {
+            $gpuList = Get-CimInstance Win32_VideoController -ErrorAction Stop |
+                Select-Object -ExpandProperty Name |
+                Where-Object { $_ -and $_.Trim() -ne "" }
+            $gpu = ($gpuList -join ", ")
+        }
+        catch {
+            Write-Verbose "Unable to retrieve GPU information"
+        }
+
+        try {
+            $memoryModules = Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop
+            $totalRamBytes = ($memoryModules | Measure-Object -Property Capacity -Sum).Sum
+            if ($totalRamBytes) {
+                $installedRam = "$([math]::Round($totalRamBytes / 1GB, 0)) GB"
+            }
+        }
+        catch {
+            Write-Verbose "Unable to retrieve RAM information"
+        }
+
+        try {
+            $baseBoard = Get-CimInstance Win32_BaseBoard -ErrorAction Stop | Select-Object -First 1
+            $invalidBoardValues = @("", "Default string", "To be filled by O.E.M.", "System Version", "Undefined")
+            if ($baseBoard.Product -and $invalidBoardValues -notcontains $baseBoard.Product.Trim()) {
+                $mainboardName = $baseBoard.Product
+            }
+        }
+        catch {
+            Write-Verbose "Unable to retrieve mainboard information"
+        }
+
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
         $content = @"
-Recommended BIOS Settings
-=========================
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          SYSTEM INFORMATION                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ CPU:         $($cpu.PadRight(70))│
+│ GPU:         $($gpu.PadRight(70))│
+│ RAM:         $($installedRam.PadRight(70))│
+│ Mainboard:   $($mainboardName.PadRight(70))│
+│ Generated:   $($timestamp.PadRight(70))│
+└─────────────────────────────────────────────────────────────────────────────┘
 
-- Enable EXPO/XMP
-  Enables the rated memory speed and timings instead of slow default JEDEC values.
 
-- Enable Resizable BAR
-  Can improve GPU performance and is generally recommended on modern gaming systems.
+RECOMMENDED BIOS SETTINGS
+─────────────────────────────────────────────────────────────────────────────
 
-- Disable CSM
-  Ensures proper UEFI boot behavior and avoids legacy compatibility issues.
+► EXPO/XMP MEMORY PROFILE
+  Enable this setting to run your memory at the manufacturer's rated speed
+  and timings instead of conservative JEDEC defaults.
+  
+  Most modern memory kits support this feature.
+  Recommended: ENABLED
 
-- Check Secure Boot
-  Recommended for a modern Windows setup and required by some security features.
+► RESIZABLE BAR / SAM (Smart Access Memory)
+  Allows the GPU to access the entire VRAM instead of small chunks.
+  Can improve performance in some scenarios, especially gaming.
+  
+  Recommended: ENABLED (if available in your BIOS)
 
-- Enable TPM / fTPM
-  Required for Windows 11 features and useful for security-related functionality.
+► SECURE BOOT
+  Modern security feature required by Windows 11 features and Trusted Platform Module.
+  Should be enabled for a secure modern setup.
+  
+  Recommended: ENABLED
 
-- Check SATA / NVMe configuration
-  Make sure storage devices are detected correctly and running in the intended mode.
+► TPM / fTPM (Trusted Platform Module)
+  Required for Windows 11 advanced security features.
+  Usually found under Security or Trusted Computing.
+  
+  Recommended: ENABLED
 
-- Configure fan curves
-  Helps balance temperatures and noise levels for daily use.
+► CSM (Compatibility Support Module)
+  Legacy feature for older devices. Modern systems don't need this.
+  Can cause boot issues if enabled unnecessarily.
+  
+  Recommended: DISABLED
 
-- Disable iGPU if not needed
-  Can simplify the system configuration on builds that only use a dedicated graphics card.
+► STORAGE CONFIGURATION
+  Verify SATA and NVMe controllers are in the correct mode (AHCI for SATA).
+  Ensure all your storage devices are detected and running properly.
+  
+  Recommended: Check once, leave as default unless issues occur
 
-- Enable Memory Context Restore only if the system remains stable
-  Can reduce boot times, but may cause memory instability on some systems.
+► FAN CURVES
+  Configure custom fan curves for better cooling and noise balance.
+  Most modern boards offer this under System Health or Temperature Monitoring.
+  
+  Recommended: Optional - adjust based on your cooling solution
 
-- Review X3D-specific recommendations
-  X3D CPUs often perform best with sensible stock-like settings instead of aggressive tuning.
+► INTEGRATED GPU (iGPU)
+  If you're using a dedicated graphics card, disabling the iGPU can simplify
+  system configuration and avoid potential conflicts.
+  
+  Recommended: DISABLE (if you have a discrete GPU)
 
-PBO / Curve Optimizer
-=====================
 
-IMPORTANT DISCLAIMER
---------------------
-PBO and Curve Optimizer are not guaranteed-safe "set and forget" settings.
-Even if a system boots and seems fine in games, unstable values can still cause:
-- random crashes
-- WHEA errors
-- corrupted installs or files
-- game instability
-- rare idle or sleep crashes
+ADVANCED TUNING: PBO & CURVE OPTIMIZER
+─────────────────────────────────────────────────────────────────────────────
 
-Every CPU is different.
-A value that works on one chip can be unstable on another.
-If you do not want to test stability properly, leave these settings at stock.
+⚠ IMPORTANT DISCLAIMER
+─────────────────────────────────────────────────────────────────────────────
+PBO and Curve Optimizer are NOT guaranteed-safe "set and forget" settings!
 
-Recommended conservative starting points
-----------------------------------------
-These are not maximum-performance values.
-They are only reasonable starting points for light tuning.
+Even if your system boots and performs well in games initially, unstable values
+can cause serious issues:
+  • Random system crashes
+  • Game crashes and unexpected behavior
+  • WHEA errors (shown in Windows Event Viewer)
+  • Data corruption or file loss
+  • Sleep/idle instability (crashes when idle)
 
-PBO:
-- Precision Boost Overdrive = Enabled or Advanced
-- PBO Limits = Motherboard or Auto
-- Scalar = Auto or 1-10 -> higher values can cause stability issues
-- Max CPU Boost Clock Override = 0 MHz or try 200MHz for maxmimum performance
-- Thermal Limit = Auto
+Every CPU is unique due to manufacturing variation. A setting that works on one
+chip can be unstable on another, even from the same batch.
 
-Curve Optimizer:
-- Curve Optimizer Mode = Negative
-- Start with:
-  - All Cores = Negative 10
+IF YOU DON'T WANT TO TEST STABILITY THOROUGHLY, LEAVE THESE AT STOCK DEFAULTS.
+─────────────────────────────────────────────────────────────────────────────
 
-If stable, you can cautiously try:
-- All Cores = Negative 15-30
 
-Only if the system is known to be very stable:
-- Best cores = Negative 5 to 10
-- Other cores = Negative 10 to 20
+CONSERVATIVE RECOMMENDED BASELINE
+─────────────────────────────────────────────────────────────────────────────
 
-Safe recommendation for most users
-----------------------------------
-If you want a simple baseline:
-- PBO = Enabled
-- Curve Optimizer = Negative 10 on all cores
-- Boost Override = 0 MHz
-- Scalar = Auto
+These settings are NOT maximum performance - they are safe starting points
+for light tuning that most systems should handle:
 
-For X3D CPUs
-------------
-Be extra conservative on X3D CPUs.
-A very reasonable baseline is:
-- PBO = Enabled
-- Curve Optimizer = Negative 10 all-core
-- no extra boost override
-- leave the rest on Auto unless you really know what you are doing
+PBO Settings:
+  ├─ Precision Boost Overdrive: Enabled or Advanced
+  ├─ PBO Limits: Motherboard or Auto
+  ├─ Max CPU Boost Override: 0 MHz (or 200 MHz for mild boost)
+  ├─ Scalar: Auto (1-10 OK, higher values = stability risk)
+  └─ Thermal Limit: Auto
 
-If you notice crashes, stutter, WHEA errors, failed boots, or strange behavior:
-- set Curve Optimizer closer to 0
-- disable PBO tuning
-- return to stock settings
+Curve Optimizer Settings:
+  ├─ Mode: Negative
+  └─ Start conservative: All Cores = Negative 10
+
+If successful and stable for 2+ weeks:
+  └─ Can cautiously try: Negative 15-20 on all cores
+
+Only if proven stable:
+  └─ Best cores: Negative 5-10 / Other cores: Negative 10-20
+
+
+SPECIAL: X3D CPUs (Ryzen 7/5 X3D)
+─────────────────────────────────────────────────────────────────────────────
+X3D CPUs already have large 3D V-Cache and work best with minimal tuning:
+
+Conservative recommendation:
+  ├─ PBO: Enabled
+  ├─ Curve Optimizer: Negative 10 all-core (conservative)
+  ├─ Boost Override: 0 MHz (no extra margin needed)
+  └─ Everything else: Stock/Auto
+
+If your X3D system becomes unstable (crashes, WHEA errors, game crashes):
+  ├─ Reduce Curve Optimizer closer to 0 (Negative 5)
+  ├─ Disable PBO completely and use stock
+  └─ Return to 100% stock settings if problems persist
+
+
+HOW TO TEST STABILITY
+─────────────────────────────────────────────────────────────────────────────
+1. Make BIOS changes one at a time
+2. Run system normally for 1-2 weeks
+3. Watch for crashes, WHEA errors, or game instability
+4. If stable after 2 weeks, each change is good
+5. If issues appear, revert the last change
+
+
+FINDING WHEA ERRORS
+─────────────────────────────────────────────────────────────────────────────
+Windows Event Viewer → Windows Logs → System → Look for "WHEA-Logger" errors.
+Multiple WHEA errors = your overclock/tuning isn't stable enough.
+
+
+FINAL ADVICE
+─────────────────────────────────────────────────────────────────────────────
+• When in doubt, use stock settings
+• Stability is more important than +5% performance
+• Test thoroughly before trusting your system
+• Keep backups of important data
+
+Good luck! 🎯
 
 "@
 
