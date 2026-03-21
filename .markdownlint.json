@@ -1,9 +1,9 @@
 {
-  "extends": "markdownlint/style/default",
+  "default": true,
   "no-hard-tabs": false,
   "line-length": {
-    "line_length": 120,
-    "level": "warning"
+    "line_length": 80,
+    "level": "error"
   },
   "no-trailing-spaces": true,
   "no-multiple-blanks": true,
