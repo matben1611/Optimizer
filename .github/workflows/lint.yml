@@ -45,10 +45,7 @@ jobs:
         shell: pwsh
         run: |
           Remove-Module Pester -Force -ErrorAction SilentlyContinue
-          $PesterConfig = New-PesterConfiguration
-          $PesterConfig.Run.Path = './tests'
-          $PesterConfig.Output.Verbosity = 'Detailed'
-          Invoke-Pester -Configuration $PesterConfig -PassThru
+          Invoke-Pester -Path ./tests -Output Detailed
 
   markdown:
     name: Markdown Lint
