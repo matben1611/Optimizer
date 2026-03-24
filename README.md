@@ -17,6 +17,15 @@ time and reducing repetitive setup work after each build.
 
 ---
 
+### Setup Modes
+
+- **Interactive** — each step is shown with a confirmation prompt
+- **Quick Setup** — applies all tweaks automatically without prompting (websites skipped)
+- **System Restore Point** — optionally created before any changes are made
+- **Changes Report** — summary of all applied changes printed at the end
+
+<br>
+
 ### System Information
 
 - Overview of CPU, GPU, RAM, mainboard, BIOS version and OS
@@ -27,6 +36,7 @@ time and reducing repetitive setup work after each build.
 
 - GPU driver page for AMD or NVIDIA (auto-detected)
 - Chipset driver page for Intel or AMD (auto-detected)
+- DDU (Display Driver Uninstaller) download page
 
 <br>
 
@@ -35,6 +45,10 @@ time and reducing repetitive setup work after each build.
 - Hardware-Accelerated GPU Scheduling: **On**
 - Variable Refresh Rate: **On**
 - Game Mode: **Off**
+- Xbox Game Bar: **Off**
+- Fullscreen Optimizations: **Off** (globally)
+- High-Precision Timer Resolution: **On** (`useplatformtick` + `disabledynamictick`)
+- MSI Mode for GPU: **On** (sets `MSISupported=1` + `DevicePriority=3`)
 - Mouse Acceleration: **Off**
 - Power Plan: **Ultimate Performance** / **High Performance** / **Balanced** for X3D CPUs (auto-detected)
 
@@ -47,18 +61,36 @@ time and reducing repetitive setup work after each build.
 
 <br>
 
+### Network *(applied with confirmation)*
+
+- DNS servers: **Cloudflare** (1.1.1.1 / 1.0.0.1) or **Google** (8.8.8.8 / 8.8.4.4) — applied to all active adapters
+- NIC power saving: **disabled**
+
+<br>
+
+### UI *(applied with confirmation)*
+
+- Dark Mode: **On**
+- File extensions in Explorer: **visible**
+- Hidden files in Explorer: **visible**
+
+<br>
+
 ### Optional
 
 - System Protection (restore points) on C:
 - Clipboard History
 - Do Not Disturb / Notifications
-- BIOS recommendations file on the Desktop
 
 <br>
 
 ### Tools
 
 - [Ninite](https://ninite.com/) for bulk app installation
+- [HWiNFO64](https://www.hwinfo.com/download/) for hardware monitoring
+- [GPU-Z](https://www.techpowerup.com/gpuz/) for GPU information
+- [CPU-Z](https://www.cpuid.com/softwares/cpu-z.html) for CPU information
+- [CrystalDiskMark](https://crystalmark.info/en/software/crystaldiskmark/) for storage benchmarking
 - Windows Update trigger
 - [Win11Debloat](https://github.com/Raphire/Win11Debloat) integration
 
@@ -188,21 +220,6 @@ If selected, the script launches it via its official quick-launch command:
 
 [Ninite](https://ninite.com/) is not bundled. If selected, the script opens
 the official website in the browser.
-
-<br>
-
-## BIOS Recommendations
-
----
-
-> [!CAUTION]
-> **Do not change BIOS settings unless you understand what they do
-> and are willing to test system stability properly afterward.**
->
-> **This project does not apply BIOS settings automatically.**
-> It only generates a recommendations file for manual review.
->
-> **You are fully responsible for any BIOS changes you make.**
 
 <br>
 
