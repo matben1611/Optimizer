@@ -84,10 +84,10 @@ function Read-YesNo {
         $answer = (Read-Host "$Prompt (Yes/No)").Trim().ToLowerInvariant()
 
         switch ($answer) {
-            'y' { return $true }
-            'yes' { return $true }
-            'n' { return $false }
-            'no' { return $false }
+            'y'   { Write-Host ""; Write-Host ""; return $true }
+            'yes' { Write-Host ""; Write-Host ""; return $true }
+            'n'   { Write-Host ""; Write-Host ""; return $false }
+            'no'  { Write-Host ""; Write-Host ""; return $false }
             default { Write-Host "Please enter 'Yes' or 'No'." }
         }
     }
