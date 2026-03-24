@@ -67,6 +67,7 @@ function Write-Info {
 function Write-Ok {
     param([string]$Message)
     Write-Host "[ OK  ] $Message"
+    $script:currentStepApplied = $true
 }
 
 function Write-WarnMsg {

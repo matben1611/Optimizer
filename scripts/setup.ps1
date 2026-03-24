@@ -10,9 +10,11 @@ $modulesDir = Join-Path $PSScriptRoot 'modules'
 . "$modulesDir\tweaks.ps1"
 . "$modulesDir\apps.ps1"
 
-$script:quickSetup  = $false
-$script:currentStep = 0
-$script:totalSteps  = 28
+$script:quickSetup         = $false
+$script:currentStep        = 0
+$script:totalSteps         = 28
+$script:currentStepApplied = $false
+$script:report             = [System.Collections.ArrayList]::new()
 
 function Invoke-Step {
     param(
@@ -21,17 +23,34 @@ function Invoke-Step {
         [switch]$SkipInQuickSetup
     )
     $script:currentStep++
+    $script:currentStepApplied = $false
 
     if ($script:quickSetup) {
         if (-not $SkipInQuickSetup) {
             try { & $Body } catch { Write-Verbose "Step '$Label' failed: $_" }
+            if ($script:currentStepApplied) { [void]$script:report.Add($Label) }
         }
         return
     }
 
     Write-Host "  [$script:currentStep/$script:totalSteps] $Label" -ForegroundColor Cyan
     & $Body
+    if ($script:currentStepApplied) { [void]$script:report.Add($Label) }
     Wait-A-Bit
+}
+
+function Show-Report {
+    if ($script:report.Count -eq 0) { return }
+
+    Write-Host ""
+    Write-Host "========================================"
+    Write-Host "          Changes Applied               "
+    Write-Host "========================================"
+    foreach ($entry in $script:report) {
+        Write-Host "  [+] $entry"
+    }
+    Write-Host "========================================"
+    Write-Host ""
 }
 
 try {
@@ -61,18 +80,32 @@ try {
     $script:quickSetup = Read-YesNo -Prompt "Do you want to use Quick Setup (applies all tweaks automatically)"
     Write-Host ""
 
+    Write-Host ""
+    $createRestorePoint = Read-YesNo -Prompt "Do you want to create a System Restore Point before making changes"
+    if ($createRestorePoint) {
+        Write-Info "Creating System Restore Point..."
+        try {
+            Checkpoint-Computer -Description "afterflash $(Get-Date -Format 'yyyy-MM-dd HH:mm')" -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+            Write-Ok "Restore Point created."
+        }
+        catch {
+            Write-WarnMsg "Could not create Restore Point. System Protection may be disabled on C:."
+        }
+    }
+    Write-Host ""
+
     if ($script:quickSetup) {
         Write-Host "  Applying all tweaks..." -ForegroundColor Cyan
         Write-Host ""
     }
 
     Invoke-Step 'BIOS Recommendations'       { Set-BiosRecommendationsFileIfWanted }
-    Invoke-Step 'App Installer (Ninite)'     { Open-NiniteIfWanted }          -SkipInQuickSetup
-    Invoke-Step 'GPU Drivers'                { Open-GpuDriverPageIfWanted }   -SkipInQuickSetup
-    Invoke-Step 'DDU'                        { Open-DduPageIfWanted }          -SkipInQuickSetup
+    Invoke-Step 'App Installer (Ninite)'     { Open-NiniteIfWanted }           -SkipInQuickSetup
+    Invoke-Step 'GPU Drivers'                { Open-GpuDriverPageIfWanted }    -SkipInQuickSetup
+    Invoke-Step 'DDU'                        { Open-DduPageIfWanted }           -SkipInQuickSetup
     Invoke-Step 'Chipset Drivers'            { Open-ChipsetsDriverPageIfWanted } -SkipInQuickSetup
-    Invoke-Step 'Monitoring Tools'           { Open-MonitoringToolsIfWanted }  -SkipInQuickSetup
-    Invoke-Step 'CrystalDiskMark'            { Open-CrystalDiskMarkIfWanted }  -SkipInQuickSetup
+    Invoke-Step 'Monitoring Tools'           { Open-MonitoringToolsIfWanted }   -SkipInQuickSetup
+    Invoke-Step 'CrystalDiskMark'            { Open-CrystalDiskMarkIfWanted }   -SkipInQuickSetup
     Invoke-Step 'GPU Scheduling'             { Set-HardwareAcceleratedGpuSchedulingOn }
     Invoke-Step 'Variable Refresh Rate'      { Set-VariableRefreshRateOn }
     Invoke-Step 'Game Mode'                  { Set-GameModeOff }
@@ -87,13 +120,15 @@ try {
     Invoke-Step 'Dark Mode'                  { Set-DarkModeOn }
     Invoke-Step 'Diagnostic Data'            { Set-OptionalDiagnosticDataOff }
     Invoke-Step 'Delivery Optimization'      { Set-DeliveryOptimizationHttpOnly }
-    Invoke-Step 'DNS'                        { Set-DnsServers } -SkipInQuickSetup
+    Invoke-Step 'DNS'                        { Set-DnsServers }                 -SkipInQuickSetup
     Invoke-Step 'NIC Power Saving'           { Set-NicPowerSavingOff }
-    Invoke-Step 'System Protection'          { Set-SystemProtectionIfWanted } -SkipInQuickSetup
-    Invoke-Step 'Clipboard History'          { Set-ClipboardHistoryIfWanted } -SkipInQuickSetup
-    Invoke-Step 'Do Not Disturb'             { Test-DoNotDisturbIfWanted }    -SkipInQuickSetup
-    Invoke-Step 'Windows Update'             { Start-WindowsUpdateIfWanted } -SkipInQuickSetup
+    Invoke-Step 'System Protection'          { Set-SystemProtectionIfWanted }   -SkipInQuickSetup
+    Invoke-Step 'Clipboard History'          { Set-ClipboardHistoryIfWanted }   -SkipInQuickSetup
+    Invoke-Step 'Do Not Disturb'             { Test-DoNotDisturbIfWanted }      -SkipInQuickSetup
+    Invoke-Step 'Windows Update'             { Start-WindowsUpdateIfWanted }    -SkipInQuickSetup
     Invoke-Step 'Debloater'                  { Start-DebloaterIfWanted }
+
+    Show-Report
 
     Write-Host ""
     Write-Host "========================================"
