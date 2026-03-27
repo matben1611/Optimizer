@@ -23,12 +23,14 @@ time and reducing repetitive setup work after each build.
 - **Quick Setup** — applies all tweaks automatically without prompting (websites skipped)
 - **System Restore Point** — optionally created before any changes are made
 - **Changes Report** — summary of all applied changes printed at the end
+- **Log File** — timestamped log written to `%TEMP%` on each run
 
 <br>
 
 ### System Information
 
 - Overview of CPU, GPU, RAM, mainboard, BIOS version and OS
+- Optional BIOS recommendations file saved to the desktop (`bios-recommendations.txt`)
 
 <br>
 
@@ -102,7 +104,7 @@ time and reducing repetitive setup work after each build.
 
 ### Option A — Standalone EXE *(recommended for USB use)*
 
-Download `afterflash.exe` and run it directly — no installation needed.
+Download `afterflash-<version>.exe` and run it directly — no installation needed.
 
 <br>
 
